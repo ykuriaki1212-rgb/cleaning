@@ -1,0 +1,2076 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧹 お掃除記録</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+    <style>
+        :root {
+            --primary: #00c853;
+            --primary-dark: #00a844;
+            --secondary: #64b5f6;
+            --accent: #ffb74d;
+            --success: #69f0ae;
+            --bg: #e8f5e9;
+            --card: #ffffff;
+            --text: #2e7d32;
+            --text-muted: #66bb6a;
+            --text-dark: #1b5e20;
+            --shadow: rgba(0, 100, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Hiragino Sans', sans-serif;
+            background: linear-gradient(135deg, var(--bg) 0%, #c8e6c9 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+        
+        header p {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px var(--shadow);
+            border: 1px solid rgba(0, 200, 83, 0.2);
+        }
+        
+        .card h2 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-dark);
+        }
+        
+        .input-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .input-group.full {
+            grid-template-columns: 1fr;
+        }
+        
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #c8e6c9;
+            border-radius: 10px;
+            background: #f1f8e9;
+            color: var(--text-dark);
+            font-size: 1rem;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #ffffff;
+        }
+        
+        select option {
+            background: var(--card);
+            color: var(--text-dark);
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        
+        .char-counter {
+            text-align: right;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        
+        .char-counter.warning {
+            color: var(--accent);
+        }
+        
+        .char-counter.over {
+            color: #e74c3c;
+        }
+        
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,200,83,0.4);
+        }
+        
+        .btn-secondary {
+            background: #e8f5e9;
+            color: var(--text-dark);
+            margin-top: 10px;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .btn-secondary:hover {
+            background: #c8e6c9;
+        }
+        
+        /* 星評価 */
+        .star-rating {
+            display: flex;
+            gap: 5px;
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        
+        .star-rating input {
+            display: none;
+        }
+        
+        .star-rating label {
+            font-size: 1.8rem;
+            cursor: pointer;
+            color: #c8e6c9;
+            transition: all 0.2s;
+            margin-bottom: 0;
+        }
+        
+        .star-rating label:hover,
+        .star-rating label:hover ~ label,
+        .star-rating input:checked ~ label {
+            color: var(--accent);
+        }
+        
+        /* 掃除場所タグ */
+        .place-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .place-tag {
+            padding: 8px 15px;
+            border-radius: 20px;
+            background: #e8f5e9;
+            border: 1px solid #a5d6a7;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+            color: var(--text-dark);
+        }
+        
+        .place-tag:hover {
+            background: #c8e6c9;
+        }
+        
+        .place-tag.selected {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        /* 目標設定 */
+        .goal-section {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .goal-section input {
+            width: 80px;
+        }
+        
+        .goal-section span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+        
+        .goal-progress {
+            flex: 1;
+            height: 20px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .goal-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--success), var(--accent));
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        .goal-text {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        /* 統計カード */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .stat-item {
+            background: #f1f8e9;
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 5px;
+        }
+        
+        .stat-item.highlight {
+            background: linear-gradient(135deg, #e8f5e9, #fff8e1);
+            border: 2px solid var(--accent);
+        }
+        
+        .stat-item.highlight .stat-value {
+            color: #e65100;
+        }
+        
+        /* ストリーク */
+        .streak-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: linear-gradient(135deg, var(--accent), #ff8a65);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            color: white;
+        }
+        
+        /* グラフ */
+        .chart-container {
+            position: relative;
+            height: 250px;
+        }
+        
+        /* 履歴 */
+        .history-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .history-item {
+            padding: 15px;
+            background: #f1f8e9;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .history-item:hover {
+            background: #e8f5e9;
+            border-color: var(--primary);
+        }
+        
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .history-date {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        
+        .history-place {
+            font-size: 0.9rem;
+            color: var(--secondary);
+            margin-top: 3px;
+        }
+        
+        .history-time {
+            font-size: 0.85rem;
+            color: var(--primary-dark);
+            margin-top: 3px;
+        }
+        
+        .history-stars {
+            font-size: 1rem;
+            color: var(--accent);
+        }
+        
+        .history-note {
+            margin-top: 10px;
+            padding: 10px;
+            background: #ffffff;
+            border-radius: 8px;
+            border-left: 3px solid var(--secondary);
+        }
+        
+        .history-note-label {
+            font-size: 0.75rem;
+            color: var(--secondary);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .history-note-text {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #bdbdbd;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1.2rem;
+            width: auto;
+        }
+        
+        .delete-btn:hover {
+            color: #e53935;
+        }
+        
+        .edit-btn {
+            background: none;
+            border: none;
+            color: #bdbdbd;
+            cursor: pointer;
+            padding: 5px;
+            font-size: 1rem;
+            width: auto;
+        }
+        
+        .edit-btn:hover {
+            color: var(--secondary);
+        }
+        
+        .action-buttons {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* 掃除のコツ */
+        .tips-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .tip-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 15px;
+            background: #f1f8e9;
+            border-radius: 10px;
+            transition: all 0.3s;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .tip-item:hover {
+            background: #e8f5e9;
+            border-color: var(--primary);
+        }
+        
+        .tip-icon {
+            font-size: 1.5rem;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .tip-content {
+            flex: 1;
+        }
+        
+        .tip-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: var(--primary-dark);
+            margin-bottom: 3px;
+        }
+        
+        .tip-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        
+        .tip-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .tip-add-form {
+            background: #f1f8e9;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px dashed #a5d6a7;
+        }
+        
+        .tip-add-form .input-group {
+            margin-bottom: 10px;
+        }
+        
+        /* 参考リンク */
+        .link-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .link-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            background: #f1f8e9;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--text-dark);
+            transition: all 0.3s;
+            border: 1px solid #c8e6c9;
+        }
+        
+        .link-item:hover {
+            background: #e8f5e9;
+            transform: translateX(5px);
+            border-color: var(--primary);
+        }
+        
+        .link-icon {
+            font-size: 1.5rem;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .link-info {
+            flex: 1;
+        }
+        
+        .link-title {
+            font-weight: bold;
+            font-size: 0.95rem;
+            color: var(--primary-dark);
+            margin-bottom: 3px;
+        }
+        
+        .link-desc {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+        
+        .link-arrow {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+        }
+        
+        /* 助言セクション */
+        .advice-section {
+            background: linear-gradient(135deg, #e8f5e9, #e3f2fd);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 15px;
+            border: 1px solid #a5d6a7;
+        }
+        
+        .advice-title {
+            font-size: 1rem;
+            color: var(--primary-dark);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .advice-text {
+            font-size: 0.9rem;
+            color: var(--text-dark);
+            line-height: 1.8;
+        }
+        
+        .advice-text p {
+            margin-bottom: 10px;
+        }
+        
+        .advice-text p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* 今週のサマリー */
+        .week-summary {
+            display: flex;
+            justify-content: space-between;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .day-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e8f5e9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border: 2px solid #c8e6c9;
+        }
+        
+        .day-circle.done {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .day-circle.today {
+            border: 3px solid var(--accent);
+        }
+        
+        /* 編集モーダル */
+        .edit-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .edit-modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .edit-modal-content {
+            background: #ffffff;
+            padding: 25px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: popIn 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .edit-modal-content h3 {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-dark);
+        }
+        
+        .edit-modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .edit-modal-buttons button {
+            flex: 1;
+        }
+        
+        .btn-cancel {
+            background: #e8f5e9;
+            color: var(--text-dark);
+            border: 1px solid #c8e6c9;
+        }
+        
+        .btn-cancel:hover {
+            background: #c8e6c9;
+        }
+        
+        /* お祝いモーダル */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .modal.show {
+            display: flex;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .modal-content {
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 90%;
+            animation: popIn 0.5s ease;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .modal-content h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            justify-content: center;
+            color: var(--text-dark);
+        }
+        
+        .modal-content .days {
+            font-size: 4rem;
+            font-weight: bold;
+            color: var(--primary);
+            margin: 20px 0;
+        }
+        
+        .confetti {
+            font-size: 3rem;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 15px;
+        }
+        
+        /* レスポンシブ */
+        @media (max-width: 500px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .stat-value {
+                font-size: 1.3rem;
+            }
+            
+            .day-circle {
+                width: 35px;
+                height: 35px;
+                font-size: 0.7rem;
+            }
+        }
+        
+        /* データ管理ボタン */
+        .data-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .data-buttons-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
+        .sync-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            text-align: center;
+            display: none;
+        }
+        
+        .sync-status.success {
+            display: block;
+            background: #e8f5e9;
+            color: var(--primary-dark);
+            border: 1px solid #a5d6a7;
+        }
+        
+        .sync-status.error {
+            display: block;
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef9a9a;
+        }
+        
+        .sync-status.loading {
+            display: block;
+            background: #e3f2fd;
+            color: #1565c0;
+            border: 1px solid #90caf9;
+        }
+        
+        @media (max-width: 500px) {
+            .data-buttons-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧹 お掃除記録</h1>
+            <p>〜 掃除は自分の心を磨くこと 〜</p>
+        </header>
+        
+        <!-- 今週のサマリー -->
+        <div class="card">
+            <h2>📅 今週の掃除状況</h2>
+            <div class="week-summary" id="weekSummary"></div>
+            <p id="weekMessage" style="font-size: 0.9rem; color: var(--text-muted); text-align: center;"></p>
+        </div>
+        
+        <!-- 記録入力 -->
+        <div class="card">
+            <h2>📝 掃除を記録</h2>
+            <div class="input-group full">
+                <div>
+                    <label>日付</label>
+                    <input type="date" id="cleanDate">
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>掃除した場所（複数選択可）</label>
+                    <div class="place-tags" id="placeTags">
+                        <span class="place-tag" data-place="リビング">🛋️ リビング</span>
+                        <span class="place-tag" data-place="キッチン">🍳 キッチン</span>
+                        <span class="place-tag" data-place="浴室">🛁 浴室</span>
+                        <span class="place-tag" data-place="トイレ">🚽 トイレ</span>
+                        <span class="place-tag" data-place="寝室">🛏️ 寝室</span>
+                        <span class="place-tag" data-place="玄関">🚪 玄関</span>
+                        <span class="place-tag" data-place="ベランダ">🌿 ベランダ</span>
+                        <span class="place-tag" data-place="仕事場">💼 仕事場</span>
+                        <span class="place-tag" data-place="書類">📄 書類</span>
+                        <span class="place-tag" data-place="その他">✨ その他</span>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>満足度</label>
+                    <div class="star-rating">
+                        <input type="radio" id="star5" name="rating" value="5">
+                        <input type="radio" id="star4" name="rating" value="4">
+                        <input type="radio" id="star3" name="rating" value="3" checked>
+                        <input type="radio" id="star2" name="rating" value="2">
+                        <input type="radio" id="star1" name="rating" value="1">
+                        <label for="star5">⭐</label>
+                        <label for="star4">⭐</label>
+                        <label for="star3">⭐</label>
+                        <label for="star2">⭐</label>
+                        <label for="star1">⭐</label>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>⏱️ 掃除時間</label>
+                    <select id="cleanTime">
+                        <option value="15">15分</option>
+                        <option value="30" selected>30分</option>
+                        <option value="45">45分</option>
+                        <option value="60">1時間</option>
+                        <option value="75">1時間15分</option>
+                        <option value="90">1時間30分</option>
+                        <option value="105">1時間45分</option>
+                        <option value="120">2時間</option>
+                        <option value="135">2時間15分</option>
+                        <option value="150">2時間30分</option>
+                        <option value="165">2時間45分</option>
+                        <option value="180">3時間</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>💭 今日の気づき・メモ</label>
+                    <textarea id="cleanNote" placeholder="例：窓を開けて換気しながら掃除すると気持ちがいい。排水口もピカピカにした。" maxlength="500" oninput="updateCharCounter()"></textarea>
+                    <div class="char-counter" id="charCounter">0 / 500</div>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="addRecord()">✨ 記録する</button>
+        </div>
+        
+        <!-- 履歴 -->
+        <div class="card">
+            <h2>📋 記録履歴</h2>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">
+                    <div class="icon">🧹</div>
+                    <p>まだ記録がありません<br>最初の掃除を記録しましょう！</p>
+                </div>
+            </div>
+            
+            <!-- データ管理ボタン群 -->
+            <div class="data-buttons">
+                <div class="data-buttons-row">
+                    <button class="btn-secondary" onclick="exportData()">📤 JSONエクスポート</button>
+                    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+                    <button class="btn-secondary" onclick="document.getElementById('importFile').click()">📥 JSONインポート</button>
+                </div>
+            </div>
+            <div id="syncStatus" class="sync-status"></div>
+        </div>
+        
+        <!-- 目標設定 -->
+        <div class="card">
+            <h2>🎯 週間目標</h2>
+            <div class="goal-section">
+                <span>週に</span>
+                <input type="number" id="goalDays" min="1" max="7" onchange="changeGoal()">
+                <span>日以上</span>
+                <div class="goal-progress">
+                    <div class="goal-progress-bar" id="goalBar"></div>
+                </div>
+                <span class="goal-text" id="goalText">---%</span>
+            </div>
+            <p id="goalMessage" style="font-size: 0.9rem; color: var(--text-muted);"></p>
+        </div>
+        
+        <!-- 統計 -->
+        <div class="card">
+            <h2>📊 統計</h2>
+            <div class="stats-grid">
+                <div class="stat-item highlight">
+                    <div class="stat-value" id="currentStreak">0</div>
+                    <div class="stat-label">🔥 連続日数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="bestStreak">0</div>
+                    <div class="stat-label">🏆 最高連続</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="monthlyCount">0</div>
+                    <div class="stat-label">今月の回数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="monthlyTime">0</div>
+                    <div class="stat-label">⏱️ 今月の時間</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">総記録数</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalTime">0</div>
+                    <div class="stat-label">⏱️ 総時間</div>
+                </div>
+            </div>
+            <div id="streakContainer" style="text-align: center;"></div>
+        </div>
+        
+        <!-- グラフ -->
+        <div class="card">
+            <h2>📈 掃除回数の推移（週別）</h2>
+            <div class="chart-container">
+                <canvas id="cleanChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- 掃除のコツ -->
+        <div class="card">
+            <h2>💡 掃除のコツ</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">自分だけの掃除のコツを登録しよう！（最大5件）</p>
+            
+            <!-- コツ追加フォーム -->
+            <div class="tip-add-form" id="tipAddForm">
+                <div class="input-group full">
+                    <div>
+                        <label>アイコン</label>
+                        <select id="tipIcon">
+                            <option value="⏰">⏰ 時計</option>
+                            <option value="🎵">🎵 音楽</option>
+                            <option value="📦">📦 箱</option>
+                            <option value="✨">✨ キラキラ</option>
+                            <option value="🧹">🧹 ほうき</option>
+                            <option value="🌟">🌟 星</option>
+                            <option value="💪">💪 筋肉</option>
+                            <option value="🎯">🎯 的</option>
+                            <option value="☀️">☀️ 太陽</option>
+                            <option value="🌸">🌸 花</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group full">
+                    <div>
+                        <label>タイトル</label>
+                        <input type="text" id="tipTitle" placeholder="例：朝のルーティンに組み込む" maxlength="30">
+                    </div>
+                </div>
+                <div class="input-group full">
+                    <div>
+                        <label>説明</label>
+                        <input type="text" id="tipDesc" placeholder="例：起床後の5分掃除で1日を気持ちよくスタート" maxlength="50">
+                    </div>
+                </div>
+                <button class="btn-primary" onclick="addTip()">＋ コツを追加</button>
+            </div>
+            
+            <!-- コツリスト -->
+            <div class="tips-list" id="tipsList"></div>
+        </div>
+        
+        <!-- 参考になるリンク集 -->
+        <div class="card">
+            <h2>🎬 参考になるYouTube・ウェブサイト</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 15px;">掃除が楽しくなるコンテンツを集めました</p>
+            
+            <div class="link-list">
+                <a href="https://www.youtube.com/@motegi-souji" target="_blank" rel="noopener noreferrer" class="link-item">
+                    <span class="link-icon">🎥</span>
+                    <div class="link-info">
+                        <div class="link-title">茂木流掃除講座【茂木和哉】</div>
+                        <div class="link-desc">洗剤のプロが教える、コスパ抜群のお掃除テクニック</div>
+                    </div>
+                    <span class="link-arrow">→</span>
+                </a>
+                <a href="https://www.youtube.com/@osouji-pro-kiyokiyo" target="_blank" rel="noopener noreferrer" class="link-item">
+                    <span class="link-icon">🎥</span>
+                    <div class="link-info">
+                        <div class="link-title">お掃除職人きよきよ</div>
+                        <div class="link-desc">35年以上のプロが教える、家庭で使える掃除術</div>
+                    </div>
+                    <span class="link-arrow">→</span>
+                </a>
+                <a href="https://www.youtube.com/@osouji-diary" target="_blank" rel="noopener noreferrer" class="link-item">
+                    <span class="link-icon">🎥</span>
+                    <div class="link-info">
+                        <div class="link-title">おそうじダイアリー</div>
+                        <div class="link-desc">主婦に大人気！10分で分かるお掃除テクニック</div>
+                    </div>
+                    <span class="link-arrow">→</span>
+                </a>
+                <a href="https://www.youtube.com/@yamachan-osouji" target="_blank" rel="noopener noreferrer" class="link-item">
+                    <span class="link-icon">🎥</span>
+                    <div class="link-info">
+                        <div class="link-title">お掃除TV【森のやまちゃん】</div>
+                        <div class="link-desc">現役ハウスクリーニング業者が教えるお掃除情報</div>
+                    </div>
+                    <span class="link-arrow">→</span>
+                </a>
+                <a href="https://panasonic.jp/life/housework/990002.html" target="_blank" rel="noopener noreferrer" class="link-item">
+                    <span class="link-icon">🌐</span>
+                    <div class="link-info">
+                        <div class="link-title">掃除で期待できる効果と習慣化のコツ</div>
+                        <div class="link-desc">Panasonic UP LIFE - 健康・心・暮らしを整える方法</div>
+                    </div>
+                    <span class="link-arrow">→</span>
+                </a>
+            </div>
+            
+            <!-- 掃除の助言 -->
+            <div class="advice-section">
+                <div class="advice-title">🌿 掃除を楽しむための心得</div>
+                <div class="advice-text">
+                    <p>🔹 <strong>完璧を目指さない</strong> - 「今日は机の上だけ」でOK。小さな達成感の積み重ねが習慣化の鍵です。</p>
+                    <p>🔹 <strong>「ついで掃除」を習慣に</strong> - 手を洗ったら洗面台を拭く、お風呂上がりに鏡を拭くなど、日常の動作に組み込みましょう。</p>
+                    <p>🔹 <strong>掃除は運動にもなる</strong> - 20分の掃除で約80kcal消費！体を動かしながら部屋もキレイに一石二鳥です。</p>
+                    <p>🔹 <strong>ビフォーアフターを楽しむ</strong> - 写真を撮って変化を見える化すると、達成感が倍増します。</p>
+                    <p>🔹 <strong>好きな音楽と一緒に</strong> - お気に入りの曲1曲分だけ掃除すると決めると、楽しく取り組めます。</p>
+                    <p style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); font-style: italic; color: var(--accent);">
+                        「掃除は単なる家事ではなく、自分の心と空間を整えるセルフケア。<br>
+                        きれいな部屋は、きれいな心を育てます✨」
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- お祝いモーダル -->
+    <div class="modal" id="celebrateModal" onclick="closeModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="confetti">🎉✨🎊</div>
+            <h2>🏆 連続記録更新！</h2>
+            <div class="days" id="newBestStreak">---</div>
+            <p>日連続達成！素晴らしい習慣です！</p>
+            <button class="btn-primary" onclick="closeModal()" style="margin-top: 20px;">OK</button>
+        </div>
+    </div>
+    
+    <!-- 編集モーダル -->
+    <div class="edit-modal" id="editModal" onclick="closeEditModal()">
+        <div class="edit-modal-content" onclick="event.stopPropagation()">
+            <h3>✏️ 記録を編集</h3>
+            <input type="hidden" id="editId">
+            <div class="input-group full">
+                <div>
+                    <label>日付</label>
+                    <input type="date" id="editDate">
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>掃除した場所</label>
+                    <div class="place-tags" id="editPlaceTags">
+                        <span class="place-tag" data-place="リビング">🛋️ リビング</span>
+                        <span class="place-tag" data-place="キッチン">🍳 キッチン</span>
+                        <span class="place-tag" data-place="浴室">🛁 浴室</span>
+                        <span class="place-tag" data-place="トイレ">🚽 トイレ</span>
+                        <span class="place-tag" data-place="寝室">🛏️ 寝室</span>
+                        <span class="place-tag" data-place="玄関">🚪 玄関</span>
+                        <span class="place-tag" data-place="ベランダ">🌿 ベランダ</span>
+                        <span class="place-tag" data-place="仕事場">💼 仕事場</span>
+                        <span class="place-tag" data-place="書類">📄 書類</span>
+                        <span class="place-tag" data-place="その他">✨ その他</span>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>満足度</label>
+                    <div class="star-rating">
+                        <input type="radio" id="editStar5" name="editRating" value="5">
+                        <input type="radio" id="editStar4" name="editRating" value="4">
+                        <input type="radio" id="editStar3" name="editRating" value="3">
+                        <input type="radio" id="editStar2" name="editRating" value="2">
+                        <input type="radio" id="editStar1" name="editRating" value="1">
+                        <label for="editStar5">⭐</label>
+                        <label for="editStar4">⭐</label>
+                        <label for="editStar3">⭐</label>
+                        <label for="editStar2">⭐</label>
+                        <label for="editStar1">⭐</label>
+                    </div>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>⏱️ 掃除時間</label>
+                    <select id="editTime">
+                        <option value="15">15分</option>
+                        <option value="30">30分</option>
+                        <option value="45">45分</option>
+                        <option value="60">1時間</option>
+                        <option value="75">1時間15分</option>
+                        <option value="90">1時間30分</option>
+                        <option value="105">1時間45分</option>
+                        <option value="120">2時間</option>
+                        <option value="135">2時間15分</option>
+                        <option value="150">2時間30分</option>
+                        <option value="165">2時間45分</option>
+                        <option value="180">3時間</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>💭 今日の気づき・メモ</label>
+                    <textarea id="editNote" maxlength="500" oninput="updateEditCharCounter()"></textarea>
+                    <div class="char-counter" id="editCharCounter">0 / 500</div>
+                </div>
+            </div>
+            <div class="edit-modal-buttons">
+                <button class="btn-cancel" onclick="closeEditModal()">キャンセル</button>
+                <button class="btn-primary" onclick="saveEdit()">保存する</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- コツ編集モーダル -->
+    <div class="edit-modal" id="tipEditModal" onclick="closeTipEditModal()">
+        <div class="edit-modal-content" onclick="event.stopPropagation()">
+            <h3>✏️ コツを編集</h3>
+            <input type="hidden" id="editTipId">
+            <div class="input-group full">
+                <div>
+                    <label>アイコン</label>
+                    <select id="editTipIcon">
+                        <option value="⏰">⏰ 時計</option>
+                        <option value="🎵">🎵 音楽</option>
+                        <option value="📦">📦 箱</option>
+                        <option value="✨">✨ キラキラ</option>
+                        <option value="🧹">🧹 ほうき</option>
+                        <option value="🌟">🌟 星</option>
+                        <option value="💪">💪 筋肉</option>
+                        <option value="🎯">🎯 的</option>
+                        <option value="☀️">☀️ 太陽</option>
+                        <option value="🌸">🌸 花</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>タイトル</label>
+                    <input type="text" id="editTipTitle" maxlength="30">
+                </div>
+            </div>
+            <div class="input-group full">
+                <div>
+                    <label>説明</label>
+                    <input type="text" id="editTipDesc" maxlength="50">
+                </div>
+            </div>
+            <div class="edit-modal-buttons">
+                <button class="btn-cancel" onclick="closeTipEditModal()">キャンセル</button>
+                <button class="btn-primary" onclick="saveTipEdit()">保存する</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // ========================================
+        // API設定 - 以下のURLを実際のデプロイURLに置き換えてください
+        // ========================================
+        const API_URL = ''; // ← ここにGoogle Apps ScriptのデプロイURLを設定
+        
+        // データ管理
+        let records = JSON.parse(localStorage.getItem('cleaningRecords')) || [];
+        let goal = parseInt(localStorage.getItem('cleaningGoal')) || 5;
+        let tips = JSON.parse(localStorage.getItem('cleaningTips')) || [
+            { id: 1, icon: '⏰', title: '朝のルーティンに組み込む', desc: '起床後の5分掃除で1日を気持ちよくスタート' },
+            { id: 2, icon: '🎵', title: 'お気に入りの音楽をかけて', desc: '好きな曲1曲分だけ掃除すると決めると楽しい' },
+            { id: 3, icon: '📦', title: '「1日1捨て」を習慣に', desc: '毎日1つ不要なものを手放すとスッキリ' },
+            { id: 4, icon: '✨', title: '「ついで掃除」で効率アップ', desc: '手を洗ったら洗面台を拭く、など習慣化' }
+        ];
+        let chart = null;
+        let selectedPlaces = [];
+        let editSelectedPlaces = [];
+        
+        // 曜日
+        const DAYS = ['日', '月', '火', '水', '木', '金', '土'];
+        
+        // 同期状態表示
+        function showSyncStatus(message, type) {
+            const status = document.getElementById('syncStatus');
+            status.textContent = message;
+            status.className = 'sync-status ' + type;
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // スプレッドシートに保存（自動）
+        async function syncToSpreadsheet() {
+            if (!API_URL) return; // API未設定なら何もしない
+            
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify({
+                        action: 'save',
+                        records: records,
+                        goal: goal,
+                        tips: tips
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showSyncStatus('☁️ クラウドに同期しました', 'success');
+                }
+            } catch (error) {
+                console.error('同期エラー:', error);
+            }
+        }
+        
+        // スプレッドシートから読込（初期化時）
+        async function loadFromSpreadsheet() {
+            if (!API_URL) return false; // API未設定なら何もしない
+            
+            showSyncStatus('📥 データを読み込み中...', 'loading');
+            
+            try {
+                const response = await fetch(API_URL + '?action=load');
+                const result = await response.json();
+                
+                if (result.success && result.records) {
+                    records = result.records;
+                    goal = result.goal || 5;
+                    tips = result.tips || tips;
+                    
+                    // ローカルにも保存
+                    saveData();
+                    saveTips();
+                    localStorage.setItem('cleaningGoal', goal);
+                    
+                    showSyncStatus('☁️ クラウドからデータを読み込みました', 'success');
+                    return true;
+                }
+            } catch (error) {
+                console.error('読込エラー:', error);
+                showSyncStatus('ローカルデータを使用中', 'success');
+            }
+            return false;
+        }
+        
+        // 初期化
+        document.addEventListener('DOMContentLoaded', async () => {
+            document.getElementById('cleanDate').valueAsDate = new Date();
+            document.getElementById('goalDays').value = goal;
+            
+            // 場所タグのクリックイベント
+            document.querySelectorAll('#placeTags .place-tag').forEach(tag => {
+                tag.addEventListener('click', () => togglePlace(tag));
+            });
+            document.querySelectorAll('#editPlaceTags .place-tag').forEach(tag => {
+                tag.addEventListener('click', () => toggleEditPlace(tag));
+            });
+            
+            // スプレッドシートからデータを自動読み込み
+            if (API_URL) {
+                await loadFromSpreadsheet();
+                document.getElementById('goalDays').value = goal;
+            }
+            
+            updateDisplay();
+            updateTipsList();
+        });
+        
+        // 場所の選択切り替え
+        function togglePlace(tag) {
+            const place = tag.dataset.place;
+            if (selectedPlaces.includes(place)) {
+                selectedPlaces = selectedPlaces.filter(p => p !== place);
+                tag.classList.remove('selected');
+            } else {
+                selectedPlaces.push(place);
+                tag.classList.add('selected');
+            }
+        }
+        
+        // 編集モーダルでの場所選択
+        function toggleEditPlace(tag) {
+            const place = tag.dataset.place;
+            if (editSelectedPlaces.includes(place)) {
+                editSelectedPlaces = editSelectedPlaces.filter(p => p !== place);
+                tag.classList.remove('selected');
+            } else {
+                editSelectedPlaces.push(place);
+                tag.classList.add('selected');
+            }
+        }
+        
+        // コツ追加
+        function addTip() {
+            const icon = document.getElementById('tipIcon').value;
+            const title = document.getElementById('tipTitle').value.trim();
+            const desc = document.getElementById('tipDesc').value.trim();
+            
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+            if (tips.length >= 5) {
+                alert('コツは最大5件まで登録できます');
+                return;
+            }
+            
+            tips.push({
+                id: Date.now(),
+                icon,
+                title,
+                desc: desc || ''
+            });
+            
+            saveTips();
+            syncToSpreadsheet(); // スプレッドシートに自動同期
+            updateTipsList();
+            
+            // 入力欄リセット
+            document.getElementById('tipTitle').value = '';
+            document.getElementById('tipDesc').value = '';
+        }
+        
+        // コツ削除
+        function deleteTip(id) {
+            if (confirm('このコツを削除しますか？')) {
+                tips = tips.filter(t => t.id !== id);
+                saveTips();
+                syncToSpreadsheet(); // スプレッドシートに自動同期
+                updateTipsList();
+            }
+        }
+        
+        // コツ編集モーダルを開く
+        function openTipEditModal(id) {
+            const tip = tips.find(t => t.id === id);
+            if (!tip) return;
+            
+            document.getElementById('editTipId').value = id;
+            document.getElementById('editTipIcon').value = tip.icon;
+            document.getElementById('editTipTitle').value = tip.title;
+            document.getElementById('editTipDesc').value = tip.desc;
+            
+            document.getElementById('tipEditModal').classList.add('show');
+        }
+        
+        // コツ編集モーダルを閉じる
+        function closeTipEditModal() {
+            document.getElementById('tipEditModal').classList.remove('show');
+        }
+        
+        // コツ編集を保存
+        function saveTipEdit() {
+            const id = parseInt(document.getElementById('editTipId').value);
+            const icon = document.getElementById('editTipIcon').value;
+            const title = document.getElementById('editTipTitle').value.trim();
+            const desc = document.getElementById('editTipDesc').value.trim();
+            
+            if (!title) {
+                alert('タイトルを入力してください');
+                return;
+            }
+            
+            const index = tips.findIndex(t => t.id === id);
+            if (index === -1) return;
+            
+            tips[index] = { ...tips[index], icon, title, desc };
+            
+            saveTips();
+            syncToSpreadsheet(); // スプレッドシートに自動同期
+            updateTipsList();
+            closeTipEditModal();
+        }
+        
+        // コツリスト更新
+        function updateTipsList() {
+            const container = document.getElementById('tipsList');
+            const addForm = document.getElementById('tipAddForm');
+            
+            // 5件登録済みの場合はフォームを非表示
+            if (tips.length >= 5) {
+                addForm.style.display = 'none';
+            } else {
+                addForm.style.display = 'block';
+            }
+            
+            if (tips.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">💡</div>
+                        <p>まだコツが登録されていません<br>自分だけの掃除のコツを追加しましょう！</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = tips.map(t => `
+                <div class="tip-item">
+                    <span class="tip-icon">${t.icon}</span>
+                    <div class="tip-content">
+                        <div class="tip-title">${escapeHtml(t.title)}</div>
+                        ${t.desc ? `<div class="tip-desc">${escapeHtml(t.desc)}</div>` : ''}
+                    </div>
+                    <div class="tip-actions">
+                        <button class="edit-btn" onclick="openTipEditModal(${t.id})" title="編集">✏️</button>
+                        <button class="delete-btn" onclick="deleteTip(${t.id})" title="削除">×</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // コツデータ保存
+        function saveTips() {
+            localStorage.setItem('cleaningTips', JSON.stringify(tips));
+        }
+        
+        // 文字数カウンター
+        function updateCharCounter() {
+            const textarea = document.getElementById('cleanNote');
+            const counter = document.getElementById('charCounter');
+            const length = textarea.value.length;
+            counter.textContent = `${length} / 500`;
+            
+            counter.classList.remove('warning', 'over');
+            if (length >= 500) {
+                counter.classList.add('over');
+            } else if (length >= 400) {
+                counter.classList.add('warning');
+            }
+        }
+        
+        function updateEditCharCounter() {
+            const textarea = document.getElementById('editNote');
+            const counter = document.getElementById('editCharCounter');
+            const length = textarea.value.length;
+            counter.textContent = `${length} / 500`;
+            
+            counter.classList.remove('warning', 'over');
+            if (length >= 500) {
+                counter.classList.add('over');
+            } else if (length >= 400) {
+                counter.classList.add('warning');
+            }
+        }
+        
+        // 記録追加
+        function addRecord() {
+            const date = document.getElementById('cleanDate').value;
+            const rating = parseInt(document.querySelector('input[name="rating"]:checked')?.value) || 3;
+            const time = parseInt(document.getElementById('cleanTime').value) || 30;
+            const note = document.getElementById('cleanNote').value.trim();
+            
+            if (!date) {
+                alert('日付を入力してください');
+                return;
+            }
+            if (selectedPlaces.length === 0) {
+                alert('掃除した場所を選択してください');
+                return;
+            }
+            
+            const previousBestStreak = calculateBestStreak();
+            
+            records.push({
+                id: Date.now(),
+                date,
+                places: [...selectedPlaces],
+                rating,
+                time,
+                note
+            });
+            
+            saveData();
+            syncToSpreadsheet(); // スプレッドシートに自動同期
+            updateDisplay();
+            
+            // 連続記録更新チェック
+            const newBestStreak = calculateBestStreak();
+            if (newBestStreak > previousBestStreak && newBestStreak >= 7) {
+                showCelebration(newBestStreak);
+            }
+            
+            // 入力欄リセット
+            selectedPlaces = [];
+            document.querySelectorAll('#placeTags .place-tag').forEach(tag => {
+                tag.classList.remove('selected');
+            });
+            document.getElementById('cleanNote').value = '';
+            document.getElementById('cleanTime').value = '30';
+            document.querySelector('#star3').checked = true;
+            updateCharCounter();
+        }
+        
+        // 表示更新
+        function updateDisplay() {
+            updateStats();
+            updateGoal();
+            updateChart();
+            updateHistory();
+            updateWeekSummary();
+        }
+        
+        // 今週のサマリー更新
+        function updateWeekSummary() {
+            const container = document.getElementById('weekSummary');
+            const messageEl = document.getElementById('weekMessage');
+            
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            
+            // 今週の日曜日を取得
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - dayOfWeek);
+            weekStart.setHours(0, 0, 0, 0);
+            
+            let html = '';
+            let weekCount = 0;
+            
+            for (let i = 0; i < 7; i++) {
+                const date = new Date(weekStart);
+                date.setDate(weekStart.getDate() + i);
+                const dateStr = date.toISOString().split('T')[0];
+                
+                const hasRecord = records.some(r => r.date === dateStr);
+                const isToday = i === dayOfWeek;
+                
+                if (hasRecord) weekCount++;
+                
+                html += `
+                    <div class="day-circle ${hasRecord ? 'done' : ''} ${isToday ? 'today' : ''}">
+                        ${DAYS[i]}
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+            
+            if (weekCount === 0) {
+                messageEl.textContent = '今週はまだ掃除記録がありません。始めてみましょう！';
+            } else if (weekCount >= goal) {
+                messageEl.textContent = `🎉 今週の目標達成！${weekCount}日掃除しました！`;
+            } else {
+                messageEl.textContent = `今週は${weekCount}日掃除しました。目標まであと${goal - weekCount}日！`;
+            }
+        }
+        
+        // 連続日数計算
+        function calculateCurrentStreak() {
+            if (records.length === 0) return 0;
+            
+            const sortedDates = [...new Set(records.map(r => r.date))].sort().reverse();
+            const today = new Date().toISOString().split('T')[0];
+            const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+            
+            // 今日または昨日に記録がなければストリークは0
+            if (sortedDates[0] !== today && sortedDates[0] !== yesterday) {
+                return 0;
+            }
+            
+            let streak = 1;
+            let currentDate = new Date(sortedDates[0]);
+            
+            for (let i = 1; i < sortedDates.length; i++) {
+                const prevDate = new Date(currentDate);
+                prevDate.setDate(prevDate.getDate() - 1);
+                
+                if (sortedDates[i] === prevDate.toISOString().split('T')[0]) {
+                    streak++;
+                    currentDate = prevDate;
+                } else {
+                    break;
+                }
+            }
+            
+            return streak;
+        }
+        
+        // 最高連続日数計算
+        function calculateBestStreak() {
+            if (records.length === 0) return 0;
+            
+            const sortedDates = [...new Set(records.map(r => r.date))].sort();
+            let bestStreak = 1;
+            let currentStreak = 1;
+            
+            for (let i = 1; i < sortedDates.length; i++) {
+                const prevDate = new Date(sortedDates[i - 1]);
+                const currDate = new Date(sortedDates[i]);
+                const diffDays = (currDate - prevDate) / (1000 * 60 * 60 * 24);
+                
+                if (diffDays === 1) {
+                    currentStreak++;
+                    bestStreak = Math.max(bestStreak, currentStreak);
+                } else {
+                    currentStreak = 1;
+                }
+            }
+            
+            return bestStreak;
+        }
+        
+        // 統計更新
+        function updateStats() {
+            const currentStreak = calculateCurrentStreak();
+            const bestStreak = calculateBestStreak();
+            
+            // 今月の記録数と時間
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const monthlyRecords = records.filter(r => r.date >= monthStart);
+            const monthlyCount = monthlyRecords.length;
+            const monthlyTime = monthlyRecords.reduce((sum, r) => sum + (r.time || 0), 0);
+            
+            // 総時間
+            const totalTime = records.reduce((sum, r) => sum + (r.time || 0), 0);
+            
+            document.getElementById('currentStreak').textContent = currentStreak;
+            document.getElementById('bestStreak').textContent = bestStreak;
+            document.getElementById('monthlyCount').textContent = monthlyCount;
+            document.getElementById('monthlyTime').textContent = formatTimeShort(monthlyTime);
+            document.getElementById('totalCount').textContent = records.length;
+            document.getElementById('totalTime').textContent = formatTimeShort(totalTime);
+            
+            // ストリークバッジ
+            const container = document.getElementById('streakContainer');
+            if (currentStreak >= 7) {
+                container.innerHTML = `<div class="streak-badge">🔥 ${currentStreak}日連続お掃除中！</div>`;
+            } else if (currentStreak >= 3) {
+                container.innerHTML = `<div class="streak-badge">✨ ${currentStreak}日連続達成中！</div>`;
+            } else {
+                container.innerHTML = '';
+            }
+        }
+        
+        // 時間を短い形式でフォーマット
+        function formatTimeShort(minutes) {
+            if (minutes === 0) return '0分';
+            if (minutes < 60) {
+                return `${minutes}分`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                if (mins === 0) {
+                    return `${hours}h`;
+                } else {
+                    return `${hours}h${mins}m`;
+                }
+            }
+        }
+        
+        // 目標変更（ユーザー操作時）
+        function changeGoal() {
+            updateGoal();
+            syncToSpreadsheet(); // スプレッドシートに自動同期
+        }
+        
+        // 目標更新
+        function updateGoal() {
+            goal = parseInt(document.getElementById('goalDays').value) || 5;
+            localStorage.setItem('cleaningGoal', goal);
+            
+            // 今週の掃除日数を計算
+            const today = new Date();
+            const dayOfWeek = today.getDay();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - dayOfWeek);
+            const weekStartStr = weekStart.toISOString().split('T')[0];
+            
+            const weekDays = [...new Set(records.filter(r => r.date >= weekStartStr).map(r => r.date))].length;
+            const progress = Math.min(100, Math.round((weekDays / goal) * 100));
+            
+            document.getElementById('goalBar').style.width = progress + '%';
+            document.getElementById('goalText').textContent = progress + '%';
+            
+            const diff = goal - weekDays;
+            if (diff <= 0) {
+                document.getElementById('goalMessage').textContent = '🎉 今週の目標達成！この調子で続けましょう！';
+            } else {
+                document.getElementById('goalMessage').textContent = `目標まであと ${diff} 日！頑張りましょう！`;
+            }
+        }
+        
+        // グラフ更新
+        function updateChart() {
+            const ctx = document.getElementById('cleanChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            if (records.length === 0) {
+                return;
+            }
+            
+            // 今週の日曜日を取得
+            const now = new Date();
+            const dayOfWeek = now.getDay(); // 0=日曜日
+            const thisWeekSunday = new Date(now);
+            thisWeekSunday.setDate(now.getDate() - dayOfWeek);
+            thisWeekSunday.setHours(0, 0, 0, 0);
+            
+            // 最も古い記録の週を取得
+            const oldestRecord = records.reduce((oldest, r) => 
+                r.date < oldest ? r.date : oldest, records[0].date);
+            const oldestDate = new Date(oldestRecord);
+            const oldestDayOfWeek = oldestDate.getDay();
+            const oldestWeekSunday = new Date(oldestDate);
+            oldestWeekSunday.setDate(oldestDate.getDate() - oldestDayOfWeek);
+            oldestWeekSunday.setHours(0, 0, 0, 0);
+            
+            // 最も古い記録の週から今週までの週数を計算（最大8週間）
+            const weeksDiff = Math.floor((thisWeekSunday - oldestWeekSunday) / (7 * 24 * 60 * 60 * 1000));
+            const numWeeks = Math.min(weeksDiff + 1, 8);
+            
+            const weeks = [];
+            const counts = [];
+            
+            for (let i = numWeeks - 1; i >= 0; i--) {
+                // 各週の日曜日（週の開始）
+                const weekStart = new Date(thisWeekSunday);
+                weekStart.setDate(thisWeekSunday.getDate() - (i * 7));
+                
+                // 各週の土曜日（週の終わり）
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                
+                const weekStartStr = weekStart.toISOString().split('T')[0];
+                const weekEndStr = weekEnd.toISOString().split('T')[0];
+                
+                const count = [...new Set(records
+                    .filter(r => r.date >= weekStartStr && r.date <= weekEndStr)
+                    .map(r => r.date))].length;
+                
+                weeks.push(`${weekStart.getMonth() + 1}/${weekStart.getDate()}〜`);
+                counts.push(count);
+            }
+            
+            chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: weeks,
+                    datasets: [{
+                        label: '掃除した日数',
+                        data: counts,
+                        backgroundColor: 'rgba(46, 204, 113, 0.6)',
+                        borderColor: 'rgba(46, 204, 113, 1)',
+                        borderWidth: 1,
+                        borderRadius: 5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: { color: '#2e7d32' }
+                        },
+                        annotation: {
+                            annotations: {
+                                goalLine: {
+                                    type: 'line',
+                                    yMin: goal,
+                                    yMax: goal,
+                                    borderColor: 'rgba(245, 176, 65, 0.7)',
+                                    borderWidth: 2,
+                                    borderDash: [5, 5],
+                                    label: {
+                                        display: true,
+                                        content: '目標',
+                                        position: 'end',
+                                        backgroundColor: 'rgba(245, 176, 65, 0.8)',
+                                        color: '#fff',
+                                        font: { size: 11 }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 7,
+                            grid: { color: 'rgba(0,100,0,0.1)' },
+                            ticks: { 
+                                color: '#66bb6a',
+                                stepSize: 1
+                            }
+                        },
+                        x: {
+                            grid: { color: 'rgba(0,100,0,0.05)' },
+                            ticks: { color: '#66bb6a' }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 時間をフォーマット
+        function formatTime(minutes) {
+            if (minutes < 60) {
+                return `${minutes}分`;
+            } else {
+                const hours = Math.floor(minutes / 60);
+                const mins = minutes % 60;
+                if (mins === 0) {
+                    return `${hours}時間`;
+                } else {
+                    return `${hours}時間${mins}分`;
+                }
+            }
+        }
+        
+        // 履歴更新
+        function updateHistory() {
+            const container = document.getElementById('historyList');
+            
+            if (records.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🧹</div>
+                        <p>まだ記録がありません<br>最初の掃除を記録しましょう！</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            container.innerHTML = sorted.map(r => {
+                const d = new Date(r.date);
+                const dateStr = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}（${DAYS[d.getDay()]}）`;
+                const stars = '⭐'.repeat(r.rating);
+                const timeStr = r.time ? formatTime(r.time) : '';
+                
+                const noteSection = r.note ? `
+                    <div class="history-note">
+                        <div class="history-note-label">💭 メモ</div>
+                        <div class="history-note-text">${escapeHtml(r.note)}</div>
+                    </div>
+                ` : '';
+                
+                return `
+                    <div class="history-item">
+                        <div class="history-header">
+                            <div>
+                                <div class="history-date">${dateStr}</div>
+                                <div class="history-place">📍 ${r.places.join('、')}</div>
+                                ${timeStr ? `<div class="history-time">⏱️ ${timeStr}</div>` : ''}
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <span class="history-stars">${stars}</span>
+                                <div class="action-buttons">
+                                    <button class="edit-btn" onclick="openEditModal(${r.id})" title="編集">✏️</button>
+                                    <button class="delete-btn" onclick="deleteRecord(${r.id})" title="削除">×</button>
+                                </div>
+                            </div>
+                        </div>
+                        ${noteSection}
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        // HTMLエスケープ
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        // 記録削除
+        function deleteRecord(id) {
+            if (confirm('この記録を削除しますか？')) {
+                records = records.filter(r => r.id !== id);
+                saveData();
+                syncToSpreadsheet(); // スプレッドシートに自動同期
+                updateDisplay();
+            }
+        }
+        
+        // データ保存
+        function saveData() {
+            localStorage.setItem('cleaningRecords', JSON.stringify(records));
+        }
+        
+        // お祝い表示
+        function showCelebration(days) {
+            document.getElementById('newBestStreak').textContent = days;
+            document.getElementById('celebrateModal').classList.add('show');
+        }
+        
+        function closeModal() {
+            document.getElementById('celebrateModal').classList.remove('show');
+        }
+        
+        // 編集モーダルを開く
+        function openEditModal(id) {
+            const record = records.find(r => r.id === id);
+            if (!record) return;
+            
+            document.getElementById('editId').value = id;
+            document.getElementById('editDate').value = record.date;
+            document.getElementById('editNote').value = record.note || '';
+            document.getElementById('editTime').value = record.time || 30;
+            
+            // 場所の選択状態を復元
+            editSelectedPlaces = [...record.places];
+            document.querySelectorAll('#editPlaceTags .place-tag').forEach(tag => {
+                if (editSelectedPlaces.includes(tag.dataset.place)) {
+                    tag.classList.add('selected');
+                } else {
+                    tag.classList.remove('selected');
+                }
+            });
+            
+            // 評価の選択状態を復元
+            const ratingInput = document.querySelector(`input[name="editRating"][value="${record.rating}"]`);
+            if (ratingInput) ratingInput.checked = true;
+            
+            updateEditCharCounter();
+            document.getElementById('editModal').classList.add('show');
+        }
+        
+        // 編集モーダルを閉じる
+        function closeEditModal() {
+            document.getElementById('editModal').classList.remove('show');
+            editSelectedPlaces = [];
+        }
+        
+        // 編集内容を保存
+        function saveEdit() {
+            const id = parseInt(document.getElementById('editId').value);
+            const date = document.getElementById('editDate').value;
+            const rating = parseInt(document.querySelector('input[name="editRating"]:checked')?.value) || 3;
+            const time = parseInt(document.getElementById('editTime').value) || 30;
+            const note = document.getElementById('editNote').value.trim();
+            
+            if (!date) {
+                alert('日付を入力してください');
+                return;
+            }
+            if (editSelectedPlaces.length === 0) {
+                alert('掃除した場所を選択してください');
+                return;
+            }
+            
+            const index = records.findIndex(r => r.id === id);
+            if (index === -1) return;
+            
+            records[index] = {
+                ...records[index],
+                date,
+                places: [...editSelectedPlaces],
+                rating,
+                time,
+                note
+            };
+            
+            saveData();
+            syncToSpreadsheet(); // スプレッドシートに自動同期
+            updateDisplay();
+            closeEditModal();
+        }
+        
+        // エクスポート
+        function exportData() {
+            const data = {
+                records,
+                goal,
+                tips,
+                exportDate: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cleaning_records_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        // インポート
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (data.records && Array.isArray(data.records)) {
+                        if (confirm(`${data.records.length}件のデータをインポートします。\n既存のデータは上書きされます。よろしいですか？`)) {
+                            records = data.records;
+                            if (data.goal) {
+                                goal = data.goal;
+                                document.getElementById('goalDays').value = goal;
+                            }
+                            if (data.tips && Array.isArray(data.tips)) {
+                                tips = data.tips;
+                                saveTips();
+                                updateTipsList();
+                            }
+                            saveData();
+                            updateDisplay();
+                            alert('インポートが完了しました！');
+                        }
+                    } else {
+                        alert('無効なデータ形式です');
+                    }
+                } catch (err) {
+                    alert('ファイルの読み込みに失敗しました');
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = '';
+        }
+    </script>
+</body>
+</html>
